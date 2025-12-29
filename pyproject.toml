@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=70.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "karaoke-extractor"
+version = "0.1.0"
+description = "Extract vocals and instrumental tracks (karaoke-style) from any media file."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "demucs>=4.0.1",
+  "soundfile>=0.12.1",
+]
+
+[project.scripts]
+karaoke-extract = "karaoke_extractor.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
