@@ -1,79 +1,106 @@
 # 🎤 Karaoke Extractor
 
-A reliable, GPU-accelerated CLI tool to extract **vocals** and **instrumental (karaoke-style)** tracks from **any audio or video file**.
+**Karaoke Extractor** is a GPU‑accelerated CLI tool that separates **vocals** and **instrumental (karaoke-style)** tracks from **any audio or video file**.
 
-Built on top of **Demucs** (state-of-the-art music source separation), with a robust pipeline that avoids common `torchaudio` / codec issues and works cleanly on modern Python, CUDA, and Linux systems.
+It is built on top of **Demucs** (state‑of‑the‑art music source separation) with a production‑safe architecture that avoids common `torchaudio` / codec issues and works reliably on modern Python, CUDA, and Linux systems.
+
+---
+
+## 🚀 Quick Start
+
+```bash
+# system dependency
+sudo apt install -y ffmpeg
+
+# python setup
+python -m venv .venv
+source .venv/bin/activate
+pip install -U pip
+pip install -r requirements.txt
+pip install -e .
+
+# extract karaoke tracks
+karaoke-extract "song.flac" --outdir outputs
+```
+
+Result:
+```
+outputs/
+├── song_20251229_vocals.mp3
+└── song_20251229_instrumental.mp3
+```
 
 ---
 
 ## ✨ Features
 
-- ✅ Accepts **any media format** supported by `ffmpeg`
+- 🎧 Works with **any media format** supported by `ffmpeg`
   - mp3, wav, flac, m4a, aac, ogg, mp4, mkv, webm, etc.
-- ✅ Outputs **separate vocals and instrumental tracks**
-- ✅ **MP3 output** (karaoke-ready)
-- ✅ **Automatic GPU usage (CUDA)** with CPU fallback
-- ✅ Deterministic, clean filenames:
+- 🎤 **Vocal + instrumental separation**
+- 🎶 Karaoke‑ready **MP3 output**
+- ⚡ **Automatic CUDA usage** with CPU fallback
+- 🧼 Deterministic, clean filenames:
   ```
   <original_name_snake>_yyyymmdd_vocals.mp3
   <original_name_snake>_yyyymmdd_instrumental.mp3
   ```
-- ✅ Uses **Demucs as a library** (not CLI saving)
-- ✅ Packaged as a **proper Python wheel**
-- ✅ Clean temp handling and clear error messages
+- 🧠 Uses **Demucs as a library**, not CLI saving
+- 📦 Distributed as a **Python wheel**
+- 🧹 Automatic temp cleanup
 
 ---
 
-## 🧠 Why this exists
+## 🧠 Motivation
 
-Demucs CLI works well interactively, but in automated pipelines it can break due to:
-- `torchaudio` → `torchcodec` save-path changes
-- silent failures when saving stems
+While Demucs CLI is excellent for manual use, it can be fragile in automated pipelines due to:
+
+- `torchaudio` → `torchcodec` save‑path changes
+- silent stem‑save failures
 - inconsistent output directory layouts
 
-This tool:
+This project intentionally:
 - uses Demucs **only for separation**
-- handles **audio I/O explicitly**
-- produces predictable, reproducible outputs
+- manages **audio I/O explicitly**
+- prioritizes **predictability over cleverness**
 
-Result: **boring, reliable, production-safe behavior**.
+Result: a boring, reliable tool suitable for scripts, cron jobs, and pipelines.
 
 ---
 
-## 🏗 Architecture Overview
+## 🏗 Architecture
 
 ```
-Input Media
-   │
-   ▼
-ffmpeg (decode / normalize)
-   │
-   ▼
+Input media (audio / video)
+        │
+        ▼
+ffmpeg ── decode & normalize
+        │
+        ▼
 WAV (stereo, 44.1kHz)
-   │
-   ▼
+        │
+        ▼
 Demucs (library mode, CUDA/CPU)
-   │
-   ▼
+        │
+        ▼
 Torch tensors (vocals / other)
-   │
-   ▼
-soundfile (write WAV stems)
-   │
-   ▼
-ffmpeg (encode MP3)
+        │
+        ▼
+soundfile ── write WAV stems
+        │
+        ▼
+ffmpeg ── encode MP3 outputs
 ```
 
-### Key design decisions
+### Design choices
 
 - **Demucs library mode**
-  - avoids torchaudio save-path instability
-- **soundfile for WAV output**
-  - stable, minimal dependency surface
-- **ffmpeg for decode/encode**
-  - widest format support
+  - avoids torchaudio save instability
+- **soundfile**
+  - explicit, stable audio writes
+- **ffmpeg**
+  - widest input/output support
 - **explicit device selection**
-  - CUDA when available, CPU fallback
+  - CUDA when available, CPU otherwise
 
 ---
 
@@ -81,8 +108,8 @@ ffmpeg (encode MP3)
 
 ### System
 - Linux (tested on Ubuntu)
-- NVIDIA GPU (optional, recommended)
-- `ffmpeg` installed and available in `PATH`
+- NVIDIA GPU (optional but recommended)
+- `ffmpeg` in `PATH`
 
 ```bash
 sudo apt update
@@ -91,53 +118,34 @@ sudo apt install -y ffmpeg
 
 ### Python
 - Python **3.10+**
-- Virtual environment strongly recommended
+- Virtual environment recommended
 
 ---
 
-## 🚀 Installation
+## 📥 Installation
+
+### Development / local use
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -U pip
 pip install -r requirements.txt
 pip install -e .
 ```
 
-This installs the CLI command:
+### From wheel
 
 ```bash
-karaoke-extract
+pip install karaoke_extractor-0.1.0-py3-none-any.whl
 ```
 
 ---
 
 ## ▶️ Usage
 
-### Basic
-
 ```bash
-karaoke-extract "song.flac" --outdir outputs
+karaoke-extract INPUT [options]
 ```
 
-### Output
-
-```
-outputs/
-├── song_20251229_vocals.mp3
-└── song_20251229_instrumental.mp3
-```
-
-### Video input
-
-```bash
-karaoke-extract "music_video.mp4"
-```
-
----
-
-## ⚙️ CLI Options
+### Common options
 
 | Option | Description |
 |------|-------------|
@@ -147,6 +155,23 @@ karaoke-extract "music_video.mp4"
 | `--bitrate 192k` | MP3 bitrate |
 | `--keep-temp` | Preserve temp files for debugging |
 
+### Examples
+
+Force CPU:
+```bash
+karaoke-extract song.mp3 --device cpu
+```
+
+High‑quality output:
+```bash
+karaoke-extract song.wav --bitrate 320k
+```
+
+Debug temp artifacts:
+```bash
+karaoke-extract song.flac --keep-temp
+```
+
 ---
 
 ## 🧪 GPU / CUDA Check
@@ -155,40 +180,45 @@ karaoke-extract "music_video.mp4"
 python -c "import torch; print(torch.cuda.is_available())"
 ```
 
+Expected output:
+```
+True
+```
+
 ---
 
-## 📦 Build Wheel
+## 📦 Building the Wheel
 
 ```bash
 pip install -r requirements-dev.txt
 python -m build
 ```
 
-Install elsewhere:
-
-```bash
-pip install karaoke_extractor-0.1.0-py3-none-any.whl
+Artifacts:
+```
+dist/
+└── karaoke_extractor-0.1.0-py3-none-any.whl
 ```
 
 ---
 
-## 🧹 Temp Files
+## 🧹 Temporary Files
 
-Temporary files are created under:
+Temporary working directories are created under:
 
 ```
 /tmp/karaoke_extract_<random>/
 ```
 
-Automatically cleaned unless `--keep-temp` is used.
+They are automatically removed unless `--keep-temp` is specified.
 
 ---
 
-## ⚠️ Known Limitations
+## ⚠️ Limitations
 
-- Karaoke quality depends on the original mix
-- ML separation is not perfect
-- Runtime depends on track length and GPU availability
+- Separation quality depends on the original mix
+- Vocals embedded in instruments may leave artifacts
+- ML‑based separation is not perfect by design
 
 ---
 
@@ -200,10 +230,10 @@ MIT
 
 ## 🙌 Credits
 
-- Demucs – Facebook AI Research
-- ffmpeg
-- soundfile
-- PyTorch
+- **Demucs** — Facebook AI Research
+- **ffmpeg**
+- **soundfile**
+- **PyTorch**
 
 ---
 
@@ -211,4 +241,4 @@ MIT
 
 > Make it boring. Make it reliable. Make it obvious.
 
-This tool favors explicit behavior over clever shortcuts so it keeps working as dependencies evolve.
+This project favors explicit behavior and predictable outputs so it keeps working as dependencies evolve.
